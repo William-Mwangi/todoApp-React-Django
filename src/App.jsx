@@ -1,23 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
 import TodoSearch from "./components/TodoSearch";
 import TodoFilter from "./components/TodoFilter";
 import TodoList from "./components/TodoList";
+import axios from "axios";
 
 function App() {
-  const [todos, setTodos] = useState([
-    { id: 0, task: "Learn JavaScript", status: "Active" },
-    { id: 1, task: "Play PS5", status: "Active" },
-    { id: 2, task: "read motivational videos", status: "Active" },
-    { id: 3, task: "Watch youtube videos", status: "Active" },
-  ]);
+  const [todos, setTodos] = useState([]);
+  const [errors, setErrors] = useState("");
 
-  let updateTodo = (id, new_task) => {
-    let todo = todos[id];
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:8000/todos")
+      .then((res) => {
+        //console.log(res.data);
+        setTodos(res.data);
+      })
+      .catch((errors) => setErrors(errors.message));
+  }, []);
+
+  let updateTodo = (e, id, new_task, todo) => {
+    e.preventDefault();
+    // let todo = todos[id];
     let updatedTodo = { ...todo, task: new_task, status: "Active" };
     setTodos(todos.map((t) => (t.id == id ? updatedTodo : t)));
+
+    let updatedUser = { ...todo, task: new_task };
+    axios.patch("http://127.0.0.1:8000/todos/" + id, updatedUser);
   };
 
   const addToDo = (data) => {
@@ -29,26 +40,47 @@ function App() {
         status: "Active",
       }),
     ]);
-    console.log(data);
+
+    const originalTodos = [...todos];
+
+    axios
+      .post("http://127.0.0.1:8000/todos", data)
+      .then((res) => setTodos([...todos, res.data]))
+      .catch((err) => {
+        setErrors(err.message);
+        setTodos(originalTodos);
+      });
   };
 
   const deleteTodoItem = (id) => {
     setTodos(todos.filter((todo) => todo.id !== id));
+    const originalTodos = [...todos];
+    axios.delete("http://127.0.0.1:8000/todos/" + id).catch((err) => {
+      setTodos(originalTodos);
+      setErrors(err.message);
+    });
   };
 
-  const completeTodo = (id, e) => {
+  const completeTodo = (id, e, todo) => {
     if (e.target.checked) {
+      console.log("okay");
       setTodos(
         todos.map((todo) =>
-          todo.id == id ? { ...todo, status: "Completed" } : todo
+          todo.id == id ? { ...todo, completed: true } : todo
         )
       );
+      let updatedTodo = { ...todo, completed: true };
+      axios.patch("http://127.0.0.1:8000/todos/" + id, updatedTodo);
     } else {
+      console.log("uncheck");
       setTodos(
         todos.map((todo) =>
-          todo.id == id ? { ...todo, status: "Active" } : todo
+          todo.id == id ? { ...todo, completed: false } : todo
         )
       );
+
+      let updatedTodo = { ...todo, completed: false };
+      axios.patch("http://127.0.0.1:8000/todos/" + id, updatedTodo);
     }
   };
 
@@ -57,6 +89,7 @@ function App() {
   };
   return (
     <div className="Todo-container">
+      {errors && <p>{errors}</p>}
       <TodoSearch add_todo={addToDo}></TodoSearch>
       <TodoFilter filter_todo={filterTodo}></TodoFilter>
       <TodoList

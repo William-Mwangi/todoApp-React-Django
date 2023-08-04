@@ -1,30 +1,40 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { RiEdit2Line } from "react-icons/ri";
 import { TiDelete } from "react-icons/ti";
 
 const TodoList = ({ todos, deleteTodoItem, update_todo, complete_todo }) => {
+  let taskRef = useRef(null); // this line references the update input field
   let [toggle, setToggle] = useState(false);
   let [todoItem, setTodoItem] = useState("");
   let [todoId, setTodoId] = useState(0);
-  const toggleModal = (item, id) => {
+  let [todo, setTodo] = useState({});
+  let [task, setTask] = useState("");
+
+  // this function helps to pass the current todo to the update form
+  const toggleModal = (item, id, todo) => {
     setToggle(true);
     setTodoItem(item);
     setTodoId(id);
+    setTodo(todo);
+
+    console.log(toggle);
   };
   return (
     <>
       <div className="todo-list">
-        {todos.map((todo) => (
-          <div className="todo-list-item" key={todo.id}>
+        {todos.map((todo, index) => (
+          <div className="todo-list-item" key={index}>
             <div className="task">
               <input
                 type="checkbox"
-                id="t_task"
-                onChange={(e) => complete_todo(todo.id, e)}
+                onChange={(e) => complete_todo(todo.id, e, todo)}
               ></input>
-              <p className={todo.status == "Completed" ? "strike" : ""}>
-                {" "}
-                {todo.id + 1}, {todo.task}{" "}
+              <p
+                id="t_task"
+                className={todo.completed == true ? "strike" : ""}
+                //className="strike"
+              >
+                {todo.task}{" "}
               </p>
             </div>
 
@@ -32,7 +42,7 @@ const TodoList = ({ todos, deleteTodoItem, update_todo, complete_todo }) => {
               <div className="edit">
                 <RiEdit2Line
                   size={30}
-                  onClick={() => toggleModal(todo.task, todo.id)}
+                  onClick={() => toggleModal(todo.task, todo.id, todo)}
                 />
               </div>
               <div className="del">
@@ -52,13 +62,14 @@ const TodoList = ({ todos, deleteTodoItem, update_todo, complete_todo }) => {
 
             <form
               action=""
-              onSubmit={() => {
-                update_todo(todoId, todoItem);
+              onSubmit={(e) => {
+                update_todo(e, todoId, todoItem);
                 setToggle(false);
               }}
             >
               <input
                 type="text"
+                ref={taskRef}
                 value={todoItem}
                 placeholder="Update todo item"
                 onChange={(e) => setTodoItem(e.target.value)}
